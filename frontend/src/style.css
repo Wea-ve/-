@@ -1,0 +1,131 @@
+/* ===== 全局主题：绿色农业风 ===== */
+:root {
+  --brand: #2e7d32;
+  --brand-deep: #1b5e20;
+  --brand-light: #43a047;
+  --brand-bg: #f4f7f4;
+  /* Element Plus 主色改绿 */
+  --el-color-primary: #2e7d32;
+  --el-color-primary-light-3: #57965c;
+  --el-color-primary-light-5: #7fb283;
+  --el-color-primary-light-7: #a9cfac;
+  --el-color-primary-light-8: #c2dfc4;
+  --el-color-primary-light-9: #e3f0e4;
+  --el-color-primary-dark-2: #256429;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: "Microsoft YaHei", "PingFang SC", -apple-system, sans-serif;
+  background: var(--brand-bg);
+  color: #303133;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* 页面容器 */
+.page {
+  max-width: 1280px;
+  margin: 0 auto;
+}
+
+/* 卡片圆角阴影微调 */
+.el-card {
+  border-radius: 12px;
+  border: none;
+  box-shadow: 0 2px 12px rgba(31, 66, 39, 0.06) !important;
+}
+
+/* 页面淡入上浮动画（对齐旧版视觉） */
+.fade-slide-enter-active { transition: all 0.28s ease-out; }
+.fade-slide-leave-active { transition: all 0.18s ease-in; }
+.fade-slide-enter-from { opacity: 0; transform: translateY(10px); }
+.fade-slide-leave-to { opacity: 0; transform: translateY(4px); }
+
+/* 通用页面标题条 */
+.page-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+.page-title {
+  font-size: 19px;
+  font-weight: 700;
+  color: #23422a;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.page-title::before {
+  content: '';
+  width: 5px;
+  height: 20px;
+  border-radius: 3px;
+  background: linear-gradient(180deg, var(--brand-light), var(--brand-deep));
+}
+
+/* 工具栏（搜索+按钮） */
+.toolbar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+.toolbar .grow { flex: 1; }
+
+/* 统计卡片 */
+.stat-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 18px 20px;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 2px 12px rgba(31, 66, 39, 0.06);
+}
+.stat-card .stat-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  color: #fff;
+  flex-shrink: 0;
+}
+.stat-card .stat-value {
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+.stat-card .stat-label {
+  font-size: 13px;
+  color: #8a9a8e;
+}
+
+/* 表格底色 */
+.el-table { --el-table-header-bg-color: #eef5ef; }
+
+/* 溯源详情 hero */
+.trace-hero {
+  border-radius: 16px;
+  padding: 26px 28px;
+  color: #fff;
+  background: linear-gradient(135deg, #1b5e20 0%, #2e7d32 55%, #43a047 100%);
+  box-shadow: 0 10px 30px rgba(27, 94, 32, 0.25);
+}
+
+/* 移动端适配 */
+@media (max-width: 768px) {
+  .page { padding: 0 10px; }
+  .el-card__body { padding: 14px !important; }
+  .stat-card { padding: 14px; }
+  .stat-card .stat-value { font-size: 20px; }
+  .trace-hero { padding: 20px 16px; }
+}
