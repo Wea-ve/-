@@ -1,0 +1,59 @@
+# =============================================
+# 农产品全链路溯源管理平台 - 一键部署
+# 首次启动：docker compose up -d --build
+#   MySQL 自动执行 sql/nongyeplus.sql（建表+演示数据）
+#   和 sql/ai_knowledge.sql（RAG 知识库），仅初始化一次
+# 演示扫码：APP_BASE_URL 改成你电脑的局域网 IP（容器内
+#   自动探测到的是容器虚拟网卡 IP，手机访问不到）
+# =============================================
+services:
+
+  mysql:
+    image: mysql:8.0
+    container_name: nongye-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD:-123456}
+      MYSQL_DATABASE: nongyeplus
+      TZ: Asia/Shanghai
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_general_ci
+    volumes:
+      - mysql-data:/var/lib/mysql
+      # 首次启动自动初始化（按文件名顺序执行；已初始化过则跳过）
+      - ./sql/nongyeplus.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
+      - ./sql/ai_knowledge.sql:/docker-entrypoint-initdb.d/02-knowledge.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h127.0.0.1 -uroot -p\"$$MYSQL_ROOT_PASSWORD\" --silent"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+    ports:
+      # 宿主机 3306 通常已被本机 MySQL 占用，映射到 3307 便于 Navicat 连接容器库
+      - "3307:3306"
+
+  app:
+    build: .
+    image: nongye:latest
+    container_name: nongye-app
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/nongyeplus?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false
+      DB_USERNAME: root
+      DB_PASSWORD: ${DB_PASSWORD:-123456}
+      # AI 能力（通义 DashScope），不填则 AI 问答走模拟回复
+      AI_API_KEY: ${AI_API_KEY:-}
+      # 手机扫码访问地址：改成宿主机局域网 IP，如 http://192.168.1.8:8080
+      APP_BASE_URL: ${APP_BASE_URL:-http://192.168.1.8:8080}
+    ports:
+      - "8080:8080"
+    volumes:
+      - uploads-data:/app/uploads
+
+volumes:
+  mysql-data:
+  uploads-data:
