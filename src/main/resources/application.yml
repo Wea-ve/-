@@ -1,0 +1,57 @@
+server:
+  port: 8080
+  servlet:
+    context-path: /
+
+spring:
+  application:
+    name: nongye
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://localhost:3306/nongyeplus?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false
+    username: ${DB_USERNAME:root}
+    password: ${DB_PASSWORD:123456}
+  thymeleaf:
+    cache: false
+    prefix: classpath:/templates/
+    suffix: .html
+    encoding: UTF-8
+    mode: HTML
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 50MB
+
+mybatis:
+  type-aliases-package: org.example.nongye.entity
+  configuration:
+    map-underscore-to-camel-case: true
+
+# 文件上传路径（检测报告PDF、现场图、二维码图片），使用相对路径便于跨平台部署
+upload:
+  path: ./uploads/
+
+# 应用基础地址（用于生成二维码溯源链接），部署时通过环境变量覆盖
+app:
+  # 兜底地址：二维码已改为自动探测当前局域网 IP（换 WiFi/热点无需修改），
+  # 仅当探测失败时才使用此配置
+  base-url: ${APP_BASE_URL:http://localhost:8080}
+
+# AI 问答配置（通义千问/阿里云百炼）
+# 获取 Key：https://bailian.console.aliyun.com/ → 模型广场 → 创建 API-KEY
+# 留空则使用模拟回复（根据批次数据自动生成，答辩演示够用）
+ai:
+  # 密钥通过环境变量注入，禁止写死明文（防止代码/演示材料泄露被盗刷）
+  api-key: ${AI_API_KEY:}
+  # Agent 文本对话模型（支持 function calling 工具调用）
+  agent-model: qwen-plus
+  # 多模态视觉模型（识别消费者上传的照片）
+  vl-model: qwen3-vl-plus
+  # 向量化模型（RAG 知识库检索）
+  embedding-model: text-embedding-v3
+  # 旧配置保留（单轮问答兜底）
+  model: qwen-plus
+
+logging:
+  level:
+    org.example.nongye: info

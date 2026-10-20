@@ -1,0 +1,14 @@
+# 构建上下文排除项（镜像内不需要的内容）
+target/
+frontend/node_modules/
+frontend/dist/
+node_modules/
+uploads/
+sql/
+.git/
+.idea/
+.vscode/
+*.iml
+*.log
+Dockerfile
+docker-compose.yml
