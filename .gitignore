@@ -42,3 +42,6 @@ uploads/
 *.log
 logs/
 .DS_Store
+
+# 测试残留的临时文件
+hello
