@@ -40,16 +40,25 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
+import type { EChartsOption } from 'echarts'
 import http from '../../api/http'
 import StatCard from '../../components/StatCard.vue'
 import ChartBox from '../../components/ChartBox.vue'
 import { batchStatusMap, fmtDate } from '../../utils'
+import type { FarmerDashboard } from '../../types'
 
-const d = ref({ recentBatches: [] })
+const d = ref<FarmerDashboard>({
+  totalBatches: 0,
+  plantingCount: 0,
+  harvestedCount: 0,
+  reportCount: 0,
+  cropStats: [],
+  recentBatches: []
+})
 
-const pieOption = computed(() => {
+const pieOption = computed<EChartsOption | null>(() => {
   const rows = d.value.cropStats || []
   if (!rows.length) return null
   return {
@@ -59,13 +68,13 @@ const pieOption = computed(() => {
       type: 'pie', radius: ['40%', '68%'], center: ['50%', '45%'],
       itemStyle: { borderRadius: 8, borderColor: '#fff', borderWidth: 2 },
       label: { show: false },
-      data: rows.map(r => ({ name: r.name, value: r.value }))
+      data: rows.map(r => ({ name: r.name, value: Number(r.value) }))
     }]
   }
 })
 
 onMounted(async () => {
-  d.value = await http.get('/api/farmer/dashboard')
+  d.value = await http.get<FarmerDashboard>('/api/farmer/dashboard')
 })
 </script>
 

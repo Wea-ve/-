@@ -9,6 +9,8 @@ public class Complaint {
     private Long batchId;
     private String complainant;
     private String phone;
+    /** 消费者查询/确认凭证（提交时生成，不暴露数据库主键） */
+    private String queryCode;
     private String type;
     private String content;
     private String images;

@@ -3,8 +3,8 @@
     <header class="t-nav">
       <div class="t-brand">🌾 农芯溯源</div>
       <div class="t-links">
-        <router-link to="/app/complaint/new">我要投诉</router-link>
-        <router-link to="/app/login">管理入口</router-link>
+        <router-link to="/complaint/new">我要投诉</router-link>
+        <router-link to="/login">管理入口</router-link>
       </div>
     </header>
 
@@ -21,7 +21,7 @@
       </el-card>
 
       <el-alert v-if="justSubmitted" type="success" :closable="false" show-icon class="t-card"
-                :title="`投诉提交成功！查询码 ${cid} 已自动填充，请截图保存，方便后续查询`" />
+                :title="`投诉提交成功！查询码 ${keyword} ，请截图保存，后续凭此查询进度`" />
 
       <el-empty v-if="!loading && searched && !list.length"
                 description="没有查到相关投诉，请确认手机号或查询码是否正确" />
@@ -29,7 +29,7 @@
       <el-card v-for="c in list" :key="c.id" shadow="never" class="t-card">
         <div class="c-head">
           <div>
-            <span class="c-no">工单 #{{ c.id }}</span>
+            <span class="c-no">查询码 {{ c.queryCode || '—' }}</span>
             <el-tag :type="complaintStatusMap[c.status]?.type" size="small" style="margin-left: 10px">
               {{ complaintStatusMap[c.status]?.text }}
             </el-tag>
@@ -38,7 +38,7 @@
         </div>
 
         <el-descriptions :column="2" size="small" border style="margin-top: 12px">
-          <el-descriptions-item label="类型">{{ complaintTypeMap[c.type] || c.type || '-' }}</el-descriptions-item>
+          <el-descriptions-item label="类型">{{ complaintTypeMap[c.type || ''] || c.type || '-' }}</el-descriptions-item>
           <el-descriptions-item label="关联批次">
             {{ c.batchNo ? `${c.cropName}（${c.batchNo}）` : '未关联' }}
           </el-descriptions-item>
@@ -62,8 +62,9 @@
         <!-- 处理中：消费者确认 -->
         <template v-if="c.status === 'PROCESSING'">
           <el-alert type="info" :closable="false" style="margin-top: 12px"
-                    title="管理员已回复，如问题已解决，请确认反馈后关闭工单" />
-          <div style="display: flex; gap: 10px; margin-top: 12px">
+                    title="管理员已回复，如问题已解决，请填写查询码并确认反馈以关闭工单" />
+          <div style="display: flex; gap: 10px; margin-top: 12px; flex-wrap: wrap">
+            <el-input v-model="confirmCode" placeholder="查询码" style="max-width: 160px" />
             <el-input v-model="confirmText" placeholder="如：问题已解决，满意" size="default" style="max-width: 300px" />
             <el-button type="success" :loading="saving" @click="confirm(c)">确认并关闭工单</el-button>
           </div>
@@ -77,36 +78,52 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import http from '../../api/http'
 import { complaintStatusMap, complaintTypeMap, fmtTime } from '../../utils'
+import type { Complaint } from '../../types'
 
 const route = useRoute()
-const keyword = ref(route.query.keyword ? String(route.query.keyword) : '')
-const justSubmitted = route.query.submitted === '1'
-const cid = route.query.cid
-const list = ref([])
-const loading = ref(false)
-const saving = ref(false)
-const confirmText = ref('')
+const keyword = ref<string>(route.query.keyword ? String(route.query.keyword) : '')
+const justSubmitted: boolean = route.query.submitted === '1'
+const list = ref<Complaint[]>([])
+// 模板原有引用，保持默认 false，与原行为一致
+const searched = ref<boolean>(false)
+const loading = ref<boolean>(false)
+const saving = ref<boolean>(false)
+const confirmText = ref<string>('')
+const confirmCode = ref<string>('')
 
-async function load() {
+async function load(): Promise<void> {
   const kw = keyword.value.trim()
-  if (!kw) return ElMessage.warning('请输入手机号或查询码')
+  if (!kw) {
+    ElMessage.warning('请输入手机号或查询码')
+    return
+  }
   loading.value = true
   try {
-    list.value = await http.get('/api/complaint/query', { params: { keyword: kw } })
+    list.value = await http.get<Complaint[]>('/api/complaint/query', { params: { keyword: kw } })
   } finally { loading.value = false }
 }
 
-async function confirm(c) {
-  if (!confirmText.value.trim()) return ElMessage.warning('请填写确认内容')
+async function confirm(c: Complaint): Promise<void> {
+  if (!confirmCode.value.trim()) {
+    ElMessage.warning('请填写查询码')
+    return
+  }
+  if (!confirmText.value.trim()) {
+    ElMessage.warning('请填写确认内容')
+    return
+  }
   saving.value = true
   try {
-    await http.post(`/api/complaint/${c.id}/confirm`, { consumerReply: confirmText.value })
+    await http.post(`/api/complaint/${c.id}/confirm`, {
+      consumerReply: confirmText.value,
+      queryCode: confirmCode.value.trim().toUpperCase()
+    })
     ElMessage.success('感谢反馈，工单已关闭')
     load()
   } catch { /* 已提示 */ } finally { saving.value = false }

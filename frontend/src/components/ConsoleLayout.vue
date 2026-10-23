@@ -115,21 +115,34 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import type { UploadFile } from 'element-plus'
 import http from '../api/http'
-import { auth, logout, roleMap } from '../store/auth'
+import { auth, logout, roleMap, type AuthUser, type Role } from '../store/auth'
+
+interface MenuItem {
+  path: string
+  title: string
+  icon: string
+}
+
+interface RoleInfo {
+  name: string
+  icon: string
+  home: string
+}
 
 const route = useRoute()
 const router = useRouter()
 
-const roleInfo = computed(() => roleMap[auth.user?.role] || {})
-const isAdmin = computed(() => auth.user?.role === 'admin')
+const roleInfo = computed<RoleInfo>(() => (auth.user ? roleMap[auth.user.role] : { name: '', icon: '', home: '' }))
+const isAdmin = computed<boolean>(() => auth.user?.role === 'admin')
 
 // 菜单配置（按角色）
-const MENU = {
+const MENU: Record<Role, MenuItem[]> = {
   farmer: [
     { path: '/farmer/dashboard', title: '工作台', icon: '🏠' },
     { path: '/farmer/batch', title: '种植批次', icon: '🌱' },
@@ -160,33 +173,33 @@ const MENU = {
     { path: '/admin/scan-stats', title: '扫码统计', icon: '📱' }
   ]
 }
-const menus = computed(() => MENU[auth.user?.role] || [])
+const menus = computed<MenuItem[]>(() => (auth.user ? MENU[auth.user.role] : []))
 
-const isActive = (item) => route.path.startsWith(item.path)
-const go = (item) => {
+const isActive = (item: MenuItem): boolean => route.path.startsWith(item.path)
+const go = (item: MenuItem): void => {
   drawer.value = false
   if (!isActive(item)) router.push(item.path)
 }
 
 // 抽屉菜单
-const drawer = ref(false)
+const drawer = ref<boolean>(false)
 
 // 实时时钟
-const clock = ref('')
-let clockTimer = null
-function tick() {
+const clock = ref<string>('')
+let clockTimer: number | undefined
+function tick(): void {
   const d = new Date()
-  const p = (n) => String(n).padStart(2, '0')
+  const p = (n: number): string => String(n).padStart(2, '0')
   clock.value = `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`
 }
 
 // 管理员铃铛：待处理投诉数
-const pendingCount = ref(0)
-const bellShake = ref(false)
-async function loadPending() {
+const pendingCount = ref<number>(0)
+const bellShake = ref<boolean>(false)
+async function loadPending(): Promise<void> {
   if (!isAdmin.value) return
   try {
-    const d = await http.get('/api/admin/pending-count')
+    const d = await http.get<{ count: number }>('/api/admin/pending-count')
     if (d.count !== pendingCount.value) {
       bellShake.value = true
       setTimeout(() => (bellShake.value = false), 800)
@@ -194,20 +207,21 @@ async function loadPending() {
     pendingCount.value = d.count
   } catch { /* 忽略 */ }
 }
-const goPending = () => {
+const goPending = (): void => {
   ElMessage.info(`有 ${pendingCount.value} 个待处理投诉工单`)
   router.push('/admin/complaints')
 }
 
 // 个人中心
-const profileVisible = ref(false)
-const profileTab = ref('info')
+const profileVisible = ref<boolean>(false)
+const profileTab = ref<string>('info')
 const profileForm = reactive({ realName: '', phone: '', address: '' })
 const pwdForm = reactive({ oldPassword: '', newPassword: '', confirm: '' })
-const saving = ref(false)
-const savingPwd = ref(false)
+const saving = ref<boolean>(false)
+const savingPwd = ref<boolean>(false)
 
-function openProfile() {
+function openProfile(): void {
+  if (!auth.user) return
   profileForm.realName = auth.user.realName || ''
   profileForm.phone = auth.user.phone || ''
   profileForm.address = auth.user.address || ''
@@ -216,30 +230,40 @@ function openProfile() {
   profileVisible.value = true
 }
 
-async function onAvatarChange(file) {
+async function onAvatarChange(file: UploadFile): Promise<void> {
+  if (!auth.user || !file.raw) return
   const fd = new FormData()
   fd.append('file', file.raw)
   try {
-    const d = await http.post('/api/auth/avatar', fd)
+    const d = await http.post<{ avatar?: string }>('/api/auth/avatar', fd)
     auth.user.avatar = d.avatar
     ElMessage.success('头像已更新')
   } catch { /* 拦截器已提示 */ }
 }
 
-async function saveProfile() {
-  if (!profileForm.realName.trim()) return ElMessage.warning('姓名不能为空')
+async function saveProfile(): Promise<void> {
+  if (!profileForm.realName.trim()) {
+    ElMessage.warning('姓名不能为空')
+    return
+  }
   saving.value = true
   try {
-    const u = await http.put('/api/auth/profile', { ...profileForm })
+    const u = await http.put<AuthUser>('/api/auth/profile', { ...profileForm })
     auth.user = u
     ElMessage.success('个人信息已保存')
     profileVisible.value = false
   } catch { /* 拦截器已提示 */ } finally { saving.value = false }
 }
 
-async function savePwd() {
-  if (pwdForm.newPassword.length < 6) return ElMessage.warning('新密码长度至少 6 位')
-  if (pwdForm.newPassword !== pwdForm.confirm) return ElMessage.warning('两次输入的新密码不一致')
+async function savePwd(): Promise<void> {
+  if (pwdForm.newPassword.length < 6) {
+    ElMessage.warning('新密码长度至少 6 位')
+    return
+  }
+  if (pwdForm.newPassword !== pwdForm.confirm) {
+    ElMessage.warning('两次输入的新密码不一致')
+    return
+  }
   savingPwd.value = true
   try {
     await http.put('/api/auth/password', { oldPassword: pwdForm.oldPassword, newPassword: pwdForm.newPassword })
@@ -248,7 +272,7 @@ async function savePwd() {
   } catch { /* 拦截器已提示 */ } finally { savingPwd.value = false }
 }
 
-async function onCommand(cmd) {
+async function onCommand(cmd: string): Promise<void> {
   if (cmd === 'profile') openProfile()
   if (cmd === 'logout') {
     await ElMessageBox.confirm('确定退出登录吗？', '提示', { type: 'warning', confirmButtonText: '退出', cancelButtonText: '取消' })
@@ -257,7 +281,7 @@ async function onCommand(cmd) {
   }
 }
 
-let bellTimer = null
+let bellTimer: number | undefined
 onMounted(() => {
   tick()
   clockTimer = setInterval(tick, 1000)

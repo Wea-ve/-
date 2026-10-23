@@ -40,34 +40,36 @@
         <div class="slogan">从田间到餐桌 · 每一步都可信</div>
         <div class="test-tip">测试账号：farmer01 / dealer01 / admin　密码均为 123456</div>
         <div class="consumer-entry">
-          <router-link to="/app/complaint/new" class="entry-link">📢 我要投诉</router-link>
+          <router-link to="/complaint/new" class="entry-link">📢 我要投诉</router-link>
           <span class="mx">·</span>
-          <router-link to="/app/complaint/query" class="entry-link">🔍 投诉查询</router-link>
+          <router-link to="/complaint/query" class="entry-link">🔍 投诉查询</router-link>
         </div>
       </div>
     </div>
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { login, roleMap } from '../store/auth'
+import { login, roleMap, type Role } from '../store/auth'
 
 const route = useRoute()
 const router = useRouter()
-const form = reactive({ username: '', password: '', role: 'farmer' })
-const loading = ref(false)
+const form = reactive<{ username: string; password: string; role: Role }>({ username: '', password: '', role: 'farmer' })
+const loading = ref<boolean>(false)
 
-const switchRole = (key) => {
-  form.role = key
-  form.username = ''
-  form.password = ''
+const switchRole = (key: string): void => {
+  // 仅切换角色通道，不清空已输入的账号密码（避免用户输完再点角色时被清空）
+  form.role = key as Role
 }
 
-async function onLogin() {
-  if (!form.username.trim() || !form.password) return ElMessage.warning('请输入账号和密码')
+async function onLogin(): Promise<void> {
+  if (!form.username.trim() || !form.password) {
+    ElMessage.warning('请输入账号和密码')
+    return
+  }
   loading.value = true
   try {
     const user = await login(form.username.trim(), form.password, form.role)

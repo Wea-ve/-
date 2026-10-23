@@ -19,7 +19,7 @@
         <el-table-column prop="complainant" label="投诉人" width="100" />
         <el-table-column prop="phone" label="电话" width="125" />
         <el-table-column label="类型" width="100">
-          <template #default="{ row }">{{ complaintTypeMap[row.type] || row.type || '-' }}</template>
+          <template #default="{ row }">{{ complaintTypeMap[row.type || ''] || row.type || '-' }}</template>
         </el-table-column>
         <el-table-column prop="cropName" label="关联作物" width="100" />
         <el-table-column prop="content" label="投诉内容" min-width="180" show-overflow-tooltip />
@@ -52,7 +52,7 @@
           <el-descriptions-item label="投诉人">{{ row.complainant }}</el-descriptions-item>
           <el-descriptions-item label="电话">{{ row.phone || '-' }}</el-descriptions-item>
           <el-descriptions-item label="关联批次">{{ row.batchNo || '无' }}<span v-if="row.cropName">（{{ row.cropName }}）</span></el-descriptions-item>
-          <el-descriptions-item label="类型">{{ complaintTypeMap[row.type] || row.type || '-' }}</el-descriptions-item>
+          <el-descriptions-item label="类型">{{ complaintTypeMap[row.type || ''] || row.type || '-' }}</el-descriptions-item>
         </el-descriptions>
         <el-alert type="warning" :closable="false" :title="row.content" style="margin-bottom: 14px" />
 
@@ -102,46 +102,50 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { onMounted, ref } from 'vue'
 import { ElMessage } from 'element-plus'
 import http from '../../api/http'
 import { downloadBlob, complaintStatusMap, complaintTypeMap, fmtTime } from '../../utils'
+import type { Complaint } from '../../types'
 
-const list = ref([])
-const keyword = ref('')
-const loading = ref(false)
-const saving = ref(false)
-const replyVisible = ref(false)
-const replyText = ref('')
-const row = ref(null)
+const list = ref<Complaint[]>([])
+const keyword = ref<string>('')
+const loading = ref<boolean>(false)
+const saving = ref<boolean>(false)
+const replyVisible = ref<boolean>(false)
+const replyText = ref<string>('')
+const row = ref<Complaint | null>(null)
 
-async function load() {
+async function load(): Promise<void> {
   loading.value = true
   try {
-    list.value = await http.get('/api/admin/complaints', { params: { keyword: keyword.value || undefined } })
+    list.value = await http.get<Complaint[]>('/api/admin/complaints', { params: { keyword: keyword.value || undefined } })
   } finally { loading.value = false }
 }
 
-const openReply = (r) => {
+const openReply = (r: Complaint): void => {
   row.value = r
   replyText.value = ''
   replyVisible.value = true
 }
 
-async function submitReply(status) {
-  if (!replyText.value.trim()) return ElMessage.warning('回复内容不能为空')
+async function submitReply(status: string): Promise<void> {
+  if (!replyText.value.trim()) {
+    ElMessage.warning('回复内容不能为空')
+    return
+  }
   saving.value = true
   try {
-    await http.post(`/api/admin/complaints/${row.value.id}/reply`, { reply: replyText.value, status })
+    await http.post(`/api/admin/complaints/${row.value!.id}/reply`, { reply: replyText.value, status })
     ElMessage.success(status === 'CLOSED' ? '工单已办结关闭' : '已回复，工单转为处理中')
     replyVisible.value = false
     load()
   } catch { /* 已提示 */ } finally { saving.value = false }
 }
 
-async function exportExcel() {
-  const res = await http.get('/admin/complaints/export', { responseType: 'blob' })
+async function exportExcel(): Promise<void> {
+  const res = await http.get<{ data: BlobPart }>('/admin/complaints/export', { responseType: 'blob' })
   downloadBlob(res, '投诉工单.xlsx')
 }
 

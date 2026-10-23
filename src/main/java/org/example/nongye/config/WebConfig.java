@@ -89,7 +89,9 @@ public class WebConfig implements WebMvcConfigurer {
                                             jakarta.servlet.http.HttpServletResponse response,
                                             jakarta.servlet.FilterChain chain) throws jakarta.servlet.ServletException, java.io.IOException {
                 String uri = request.getRequestURI();
+                // 导出接口返回文件流，不能被当成旧页面重定向
                 boolean legacyPage = "GET".equalsIgnoreCase(request.getMethod())
+                        && !uri.endsWith("/export")
                         && (uri.startsWith("/farmer/") || uri.startsWith("/dealer/") || uri.startsWith("/admin/")
                             || uri.startsWith("/profile") || uri.startsWith("/password"));
                 if (legacyPage) {

@@ -31,16 +31,23 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { onMounted, ref } from 'vue'
 import http from '../../api/http'
 import StatCard from '../../components/StatCard.vue'
 import { fmtDate } from '../../utils'
+import type { DealerDashboard } from '../../types'
 
-const d = ref({ available: [] })
+const d = ref<DealerDashboard>({
+  availableCount: 0,
+  inboundCount: 0,
+  outboundCount: 0,
+  involvedCount: 0,
+  available: []
+})
 
 onMounted(async () => {
-  d.value = await http.get('/api/dealer/dashboard')
+  d.value = await http.get<DealerDashboard>('/api/dealer/dashboard')
 })
 </script>
 

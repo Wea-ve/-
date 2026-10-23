@@ -4,9 +4,9 @@
     <header class="t-nav">
       <div class="t-brand">🌾 农芯溯源</div>
       <div class="t-links">
-        <router-link to="/app/complaint/new">我要投诉</router-link>
-        <router-link to="/app/complaint/query">投诉查询</router-link>
-        <router-link to="/app/login">管理入口</router-link>
+        <router-link to="/complaint/new">我要投诉</router-link>
+        <router-link to="/complaint/query">投诉查询</router-link>
+        <router-link to="/login">管理入口</router-link>
       </div>
     </header>
 
@@ -37,7 +37,7 @@
                 <span class="hero-code">溯源码：{{ d.batch.traceCode }}</span>
               </div>
             </div>
-            <div class="hero-badge" v-if="d.nodeCount > 0">
+            <div class="hero-badge" v-if="(d.nodeCount || 0) > 0">
               <div class="badge-num">{{ d.nodeCount }}</div>
               <div class="badge-text">可信流转节点</div>
             </div>
@@ -155,41 +155,48 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { computed, onMounted, reactive, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import http from '../../api/http'
+import http, { type ApiError } from '../../api/http'
 import AiChat from '../../components/AiChat.vue'
 import { complaintTypeMap, fmtDate, fmtTime, logTypeMap, traceTypeMap } from '../../utils'
+import type { ComplaintSubmitResult, TraceDetailData } from '../../types'
 
 const route = useRoute()
-const d = ref({})
-const loading = ref(false)
-const error = ref('')
-const saving = ref(false)
-const complaintVisible = ref(false)
-const justComplained = computed(() => route.query.complained === '1')
+const d = ref<Partial<TraceDetailData>>({})
+const loading = ref<boolean>(false)
+const error = ref<string>('')
+const saving = ref<boolean>(false)
+const complaintVisible = ref<boolean>(false)
+const justComplained = computed<boolean>(() => route.query.complained === '1')
 const cForm = reactive({ complainant: '', phone: '', type: 'QUALITY', content: '' })
 
-async function load() {
+async function load(): Promise<void> {
   loading.value = true
   try {
-    d.value = await http.get(`/api/trace/${route.params.code}`)
+    d.value = await http.get<TraceDetailData>(`/api/trace/${route.params.code}`)
   } catch (e) {
-    error.value = e?.msg || '请核对二维码是否正确'
+    error.value = (e as ApiError)?.msg || '请核对二维码是否正确'
   } finally { loading.value = false }
 }
-const reload = () => { error.value = ''; load() }
+const reload = (): void => { error.value = ''; load() }
 
-async function submitComplaint() {
-  if (!cForm.complainant.trim()) return ElMessage.warning('请填写投诉人')
-  if (!cForm.content.trim()) return ElMessage.warning('请填写投诉内容')
+async function submitComplaint(): Promise<void> {
+  if (!cForm.complainant.trim()) {
+    ElMessage.warning('请填写投诉人')
+    return
+  }
+  if (!cForm.content.trim()) {
+    ElMessage.warning('请填写投诉内容')
+    return
+  }
   saving.value = true
   try {
-    const data = await http.post('/api/complaint', {
+    const data = await http.post<ComplaintSubmitResult>('/api/complaint', {
       ...cForm,
-      batchId: d.value.batch.id
+      batchId: d.value.batch!.id
     })
     complaintVisible.value = false
     ElMessage.success('投诉已提交')

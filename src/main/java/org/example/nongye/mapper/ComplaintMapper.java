@@ -15,8 +15,8 @@ public interface ComplaintMapper {
     @Select("SELECT * FROM complaint WHERE id = #{id}")
     Complaint selectById(Long id);
 
-    @Insert("INSERT INTO complaint (batch_id, complainant, phone, type, content, images) " +
-            "VALUES (#{batchId}, #{complainant}, #{phone}, #{type}, #{content}, #{images})")
+    @Insert("INSERT INTO complaint (batch_id, complainant, phone, query_code, type, content, images) " +
+            "VALUES (#{batchId}, #{complainant}, #{phone}, #{queryCode}, #{type}, #{content}, #{images})")
     @Options(useGeneratedKeys = true, keyProperty = "id")
     int insert(Complaint complaint);
 
@@ -54,11 +54,17 @@ public interface ComplaintMapper {
     int consumerReply(@Param("id") Long id, @Param("consumerReply") String consumerReply);
 
     /**
-     * 消费者查询自己的投诉：按手机号或查询码（投诉ID）匹配，联表作物信息
+     * 消费者查询自己的投诉：仅按查询码或手机号精确匹配（不再暴露可枚举的自增 ID）
      */
     @Select("SELECT c.*, b.crop_name, b.batch_no FROM complaint c " +
             "LEFT JOIN crop_batch b ON c.batch_id = b.id " +
-            "WHERE c.phone = #{keyword} OR CAST(c.id AS CHAR) = #{keyword} " +
+            "WHERE c.query_code = #{keyword} OR c.phone = #{keyword} " +
             "ORDER BY c.id DESC")
     List<Complaint> selectByPhoneOrCode(@Param("keyword") String keyword);
+
+    /**
+     * 消费者确认/关闭工单前的凭证校验
+     */
+    @Select("SELECT COUNT(*) FROM complaint WHERE id = #{id} AND query_code = #{queryCode}")
+    int countByIdAndQueryCode(@Param("id") Long id, @Param("queryCode") String queryCode);
 }
