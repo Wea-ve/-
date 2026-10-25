@@ -250,6 +250,22 @@ export interface TrustScore {
   computedAt?: string
 }
 
+/** 批次健康体检报告（Agent 自动跑完 5 个工具后输出） */
+export interface HealthCheckReport {
+  engine: string
+  score: number
+  ruleLevel: string
+  riskLevel: string
+  riskColor: string
+  summary: string
+  evidence: string[]
+  suggestions: string[]
+  tools: { label: string; summary: string }[]
+  sources?: { type: string; label: string; detail: string }[]
+  disclaimer: string
+  generatedAt?: string
+}
+
 /** 消费者溯源详情 */
 export interface TraceDetailData {
   batch: CropBatch

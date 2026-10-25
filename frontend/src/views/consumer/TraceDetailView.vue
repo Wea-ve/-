@@ -73,6 +73,12 @@
           <div v-if="d.trustScore.advice?.length" class="trust-advice">
             💡 {{ d.trustScore.advice[0] }}
           </div>
+          <div class="trust-action">
+            <el-button type="success" round :loading="healthLoading" @click="runHealthCheck">
+              🩺 批次健康体检
+            </el-button>
+            <span class="trust-action-tip">AI 自动跑完 5 项检查，输出风险等级 · 依据 · 建议</span>
+          </div>
           <div class="trust-foot">评分由农事记录完整度 · 检测结论 · 流转闭环 · 用药频次 四项数据聚合，红黄绿三档呈现</div>
         </div>
 
@@ -182,6 +188,45 @@
       </template>
     </el-dialog>
 
+    <!-- 批次健康体检报告 -->
+    <el-dialog v-model="healthVisible" title="🩺 批次健康体检报告" width="560px">
+      <div v-if="health" class="health-body">
+        <div class="health-head" :style="{ borderLeftColor: health.riskColor }">
+          <div class="health-badge" :style="{ background: health.riskColor }">{{ health.riskLevel }}</div>
+          <div style="min-width: 0">
+            <div class="health-summary">{{ health.summary }}</div>
+            <div class="health-meta">
+              规则评分 {{ health.score }}/100 · {{ health.engine }} · 已检查
+              {{ health.tools?.length || 0 }} 项
+            </div>
+          </div>
+        </div>
+
+        <div class="health-sec">
+          <div class="health-sec-title">检查依据</div>
+          <ul class="health-list">
+            <li v-for="(item, i) in health.evidence" :key="'e' + i">{{ item }}</li>
+          </ul>
+        </div>
+
+        <div class="health-sec">
+          <div class="health-sec-title">给消费者的建议</div>
+          <ul class="health-list">
+            <li v-for="(item, i) in health.suggestions" :key="'s' + i">{{ item }}</li>
+          </ul>
+        </div>
+
+        <div class="health-tools">
+          <el-tag v-for="(t, i) in health.tools" :key="'t' + i" size="small" effect="plain">
+            {{ t.label }}：{{ t.summary }}
+          </el-tag>
+        </div>
+        <div class="health-tip">{{ health.disclaimer }}</div>
+      </div>
+      <el-empty v-else-if="healthError" :description="healthError" :image-size="70" />
+      <div v-else class="health-loading" v-loading="true">AI 正在核对批次、农事、检测、流转与知识库…</div>
+    </el-dialog>
+
     <!-- AI 浮窗 -->
     <AiChat v-if="d.batch" :batch-id="d.batch.id" />
   </div>
@@ -194,7 +239,7 @@ import { ElMessage } from 'element-plus'
 import http, { type ApiError } from '../../api/http'
 import AiChat from '../../components/AiChat.vue'
 import { complaintTypeMap, fmtDate, fmtTime, logTypeMap, traceTypeMap } from '../../utils'
-import type { ComplaintSubmitResult, TraceDetailData } from '../../types'
+import type { ComplaintSubmitResult, HealthCheckReport, TraceDetailData } from '../../types'
 
 const route = useRoute()
 const d = ref<Partial<TraceDetailData>>({})
@@ -204,6 +249,24 @@ const saving = ref<boolean>(false)
 const complaintVisible = ref<boolean>(false)
 const justComplained = computed<boolean>(() => route.query.complained === '1')
 const cForm = reactive({ complainant: '', phone: '', type: 'QUALITY', content: '' })
+// 批次健康体检
+const healthVisible = ref<boolean>(false)
+const healthLoading = ref<boolean>(false)
+const health = ref<HealthCheckReport | null>(null)
+const healthError = ref<string>('')
+
+/** 一键体检：Agent 自动跑完 5 个工具，输出风险等级 + 依据 + 建议 */
+async function runHealthCheck(): Promise<void> {
+  healthVisible.value = true
+  health.value = null
+  healthError.value = ''
+  healthLoading.value = true
+  try {
+    health.value = await http.get<HealthCheckReport>(`/api/ai/health/${d.value.batch!.id}`)
+  } catch (e) {
+    healthError.value = (e as ApiError)?.msg || '体检生成失败，请稍后再试'
+  } finally { healthLoading.value = false }
+}
 
 async function load(): Promise<void> {
   loading.value = true
@@ -289,7 +352,26 @@ onMounted(load)
   margin-top: 14px; padding: 9px 12px; border-radius: 8px;
   background: #f4f9f4; border: 1px dashed #cfe6cf; color: #2e7d32; font-size: 13px;
 }
+.trust-action { display: flex; align-items: center; gap: 12px; margin-top: 14px; flex-wrap: wrap; }
+.trust-action-tip { color: #9aa89c; font-size: 12px; }
 .trust-foot { margin-top: 10px; color: #a5b2a7; font-size: 11.5px; }
+/* 体检报告弹窗 */
+.health-head {
+  display: flex; align-items: center; gap: 14px; padding: 12px 14px;
+  background: #fafdfa; border-left: 5px solid #2e7d32; border-radius: 10px;
+}
+.health-badge {
+  flex: 0 0 auto; color: #fff; font-weight: 800; font-size: 14px; letter-spacing: 1px;
+  padding: 8px 14px; border-radius: 999px;
+}
+.health-summary { color: #2c4633; font-size: 14px; font-weight: 700; line-height: 1.5; }
+.health-meta { color: #8a9a8e; font-size: 12px; margin-top: 4px; }
+.health-sec { margin-top: 16px; }
+.health-sec-title { font-size: 13.5px; font-weight: 700; color: #2e7d32; margin-bottom: 6px; }
+.health-list { margin: 0; padding-left: 18px; color: #4a5f50; font-size: 13px; line-height: 1.8; }
+.health-tools { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 16px; }
+.health-tip { margin-top: 12px; color: #9aa89c; font-size: 11.5px; line-height: 1.6; }
+.health-loading { height: 130px; display: flex; align-items: center; justify-content: center; color: #8a9a8e; font-size: 13px; }
 .hero-row { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; }
 .hero-crop { font-size: 30px; font-weight: 800; letter-spacing: 2px; }
 .hero-sub { margin-top: 10px; display: flex; align-items: center; gap: 10px; }

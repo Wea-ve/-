@@ -5,6 +5,7 @@ import cn.hutool.http.HttpResponse;
 import cn.hutool.json.JSONArray;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
+import org.example.nongye.common.ApiException;
 import org.example.nongye.entity.*;
 import org.example.nongye.mapper.*;
 import org.example.nongye.service.AgentService;
@@ -92,6 +93,23 @@ public class AiController {
             result.put("sources", new ArrayList<>());
             return result;
         }
+    }
+
+    /**
+     * GET /api/ai/health/{batchId}
+     * 批次健康体检：Agent 自动跑完 5 个工具（批次信息/农事记录/检测报告/流转链路/知识库），
+     * 输出风险等级、依据与建议，作为详情页的"产品功能"而非聊天框。
+     */
+    @GetMapping("/health/{batchId}")
+    public Map<String, Object> healthCheck(@PathVariable Long batchId) {
+        if (batchMapper.selectById(batchId) == null) {
+            throw ApiException.badRequest("批次信息不存在");
+        }
+        Map<String, Object> report = agentService.healthCheck(batchId);
+        if (report == null) {
+            throw ApiException.badRequest("批次健康体检生成失败");
+        }
+        return report;
     }
 
     /**

@@ -58,6 +58,8 @@ public class AgentService {
     private DetectionReportMapper reportMapper;
     @Autowired
     private KnowledgeService knowledgeService;
+    @Autowired
+    private TrustScoreService trustScoreService;
 
     @Value("${ai.api-key:}")
     private String apiKey;
@@ -175,6 +177,164 @@ public class AgentService {
             reply = "AI 服务暂时不可用，请稍后再试";
             return result(reply, toolsUsed, sources);
         }
+    }
+
+    /**
+     * 批次健康体检：Agent 自动跑完 5 个工具（批次/农事/检测/流转/知识库），
+     * 输出风险等级、依据与建议，让 Agent 从"聊天框"变成可落到详情页的产品功能。
+     * 未配置 Key 或模型返回异常时，用规则引擎结果兜底，保证功能可用。
+     */
+    public Map<String, Object> healthCheck(Long batchId) {
+        CropBatch batch = batchMapper.selectById(batchId);
+        if (batch == null) return null;
+
+        List<FarmingLog> logs = farmingLogMapper.selectByBatchId(batchId);
+        List<TraceRecord> records = traceRecordMapper.selectByBatchId(batchId);
+        List<DetectionReport> reports = reportMapper.selectByBatchId(batchId);
+        Map<String, Object> trust = trustScoreService.score(batch, logs, records, reports);
+
+        List<Map<String, String>> toolsUsed = new ArrayList<>();
+        List<Map<String, Object>> sources = new ArrayList<>();
+
+        StringBuilder ctx = new StringBuilder();
+        for (String toolName : new String[]{"get_batch_info", "get_farming_logs",
+                "get_detection_reports", "get_trace_records"}) {
+            ctx.append("【").append(toolLabel(toolName)).append("】")
+               .append(executeTool(toolName, "{}", batchId, toolsUsed, sources, null))
+               .append("\n");
+        }
+        String knowledgeQuery = batch.getCropName() + " 当季种植要点 病虫害防治 安全间隔期 储存建议";
+        ctx.append("【知识库检索】")
+           .append(executeTool("search_knowledge",
+                   new JSONObject().set("query", knowledgeQuery).toString(),
+                   batchId, toolsUsed, sources, null))
+           .append("\n");
+
+        Map<String, Object> out = new LinkedHashMap<>();
+        out.put("tools", toolsUsed);
+        out.put("score", trust.get("score"));
+        out.put("ruleLevel", trust.get("levelText"));
+        out.put("disclaimer", "AI 体检基于平台登记数据与知识库生成，仅供参考，不能替代第三方检测");
+
+        if (apiKey == null || apiKey.isEmpty()) {
+            fillRuleReport(out, trust);
+            out.put("engine", "规则引擎");
+            return out;
+        }
+
+        String system = "你是农产品批次健康体检引擎，只依据给出的工具结果与规则评分作答，不得补充未提供的事实。"
+                + "风险等级必须与规则引擎评分保持一致：评分≥80 为低风险，60-79 为中风险，<60 为高风险，不得抬高等级。"
+                + "只输出一个 JSON 对象，不要输出 Markdown 代码块或任何多余文字。格式：\n"
+                + "{\"riskLevel\":\"低风险|中风险|高风险\",\"summary\":\"一句话结论，40 字以内\","
+                + "\"evidence\":[\"依据1\",\"依据2\",\"依据3\"],\"suggestions\":[\"建议1\",\"建议2\",\"建议3\"]}";
+
+        StringBuilder dimText = new StringBuilder();
+        Object dimsObj = trust.get("dimensions");
+        if (dimsObj instanceof List<?> dims) {
+            for (Object dim : dims) {
+                Map<?, ?> d = (Map<?, ?>) dim;
+                dimText.append(d.get("name")).append(" ").append(d.get("score")).append("/")
+                        .append(d.get("max")).append("（").append(d.get("detail")).append("）；");
+            }
+        }
+
+        String user = "批次：" + batch.getBatchNo() + "（" + batch.getCropName() + "）\n"
+                + "规则引擎评分：" + trust.get("score") + "/100（" + trust.get("levelText")
+                + "，" + trust.get("grade") + " 档）\n"
+                + "规则维度：" + dimText + "\n"
+                + "工具结果：\n" + ctx;
+
+        List<JSONObject> messages = new ArrayList<>();
+        messages.add(new JSONObject().set("role", "user").set("content", user));
+        JSONObject resp = callChat(system, messages, null, null);
+        String content = resp == null ? "" : resp.getStr("content", "");
+        Map<String, Object> parsed = parseHealthJson(content);
+        if (parsed == null) {
+            fillRuleReport(out, trust);
+            out.put("engine", apiKey == null || apiKey.isEmpty() ? "规则引擎" : "规则引擎（AI 暂不可用）");
+            return out;
+        }
+
+        out.put("engine", "AI");
+        out.put("riskLevel", parsed.get("riskLevel"));
+        out.put("riskColor", riskColor(String.valueOf(parsed.get("riskLevel"))));
+        out.put("summary", parsed.get("summary"));
+        out.put("evidence", parsed.get("evidence"));
+        out.put("suggestions", parsed.get("suggestions"));
+        out.put("sources", sources);
+        out.put("generatedAt", java.time.LocalDateTime.now().toString());
+        return out;
+    }
+
+    /** 无 AI 或 AI 失败时，用规则引擎评分组装体检报告（保证产品功能始终可用） */
+    private void fillRuleReport(Map<String, Object> out, Map<String, Object> trust) {
+        String riskLevel;
+        if ("GREEN".equals(trust.get("level"))) {
+            riskLevel = "低风险";
+        } else if ("YELLOW".equals(trust.get("level"))) {
+            riskLevel = "中风险";
+        } else {
+            riskLevel = "高风险";
+        }
+        out.put("riskLevel", riskLevel);
+        out.put("riskColor", trust.get("color"));
+        out.put("summary", trust.get("headline"));
+
+        List<String> evidence = new ArrayList<>();
+        Object dimsObj = trust.get("dimensions");
+        if (dimsObj instanceof List<?> dims) {
+            for (Object dim : dims) {
+                Map<?, ?> d = (Map<?, ?>) dim;
+                evidence.add(d.get("name") + " " + d.get("score") + "/" + d.get("max")
+                        + "：" + d.get("detail"));
+            }
+        }
+        out.put("evidence", evidence);
+        out.put("suggestions", trust.get("advice"));
+        out.put("generatedAt", java.time.LocalDateTime.now().toString());
+    }
+
+    /** 解析体检 JSON，格式不合法时返回 null 交由规则引擎兜底 */
+    private Map<String, Object> parseHealthJson(String content) {
+        if (content == null || content.isEmpty()) return null;
+        int start = content.indexOf('{');
+        int end = content.lastIndexOf('}');
+        if (start < 0 || end <= start) return null;
+        try {
+            JSONObject obj = JSONUtil.parseObj(content.substring(start, end + 1));
+            String riskLevel = obj.getStr("riskLevel");
+            String summary = obj.getStr("summary");
+            JSONArray evidence = obj.getJSONArray("evidence");
+            JSONArray suggestions = obj.getJSONArray("suggestions");
+            if (riskLevel == null || summary == null || evidence == null || suggestions == null
+                    || !riskLevel.contains("风险")) {
+                return null;
+            }
+            List<String> evidenceList = new ArrayList<>();
+            for (int i = 0; i < Math.min(evidence.size(), 5); i++) {
+                evidenceList.add(evidence.getStr(i));
+            }
+            List<String> suggestionList = new ArrayList<>();
+            for (int i = 0; i < Math.min(suggestions.size(), 5); i++) {
+                suggestionList.add(suggestions.getStr(i));
+            }
+            Map<String, Object> m = new LinkedHashMap<>();
+            m.put("riskLevel", riskLevel);
+            m.put("summary", summary);
+            m.put("evidence", evidenceList);
+            m.put("suggestions", suggestionList);
+            return m;
+        } catch (Exception e) {
+            log.warn("健康体检结果解析失败：{}", content);
+            return null;
+        }
+    }
+
+    /** 风险等级 → 颜色（前端徽章直接使用） */
+    private String riskColor(String riskLevel) {
+        if (riskLevel.contains("低")) return "#2e7d32";
+        if (riskLevel.contains("中")) return "#f9a825";
+        return "#d32f2f";
     }
 
     /** 调用 chat/completions（OpenAI 兼容，stream=true 逐字返回） */
