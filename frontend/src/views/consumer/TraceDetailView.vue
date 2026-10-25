@@ -44,6 +44,38 @@
           </div>
         </div>
 
+        <!-- AI 综合可信度评分：扫码先看红黄绿评分卡，再看明细 -->
+        <div v-if="d.trustScore" class="trust-card" :style="{ borderLeftColor: d.trustScore.color }">
+          <div class="trust-head">
+            <div class="trust-ring" :style="{ background: d.trustScore.color }">{{ d.trustScore.score }}</div>
+            <div class="trust-head-info">
+              <div class="trust-title">
+                <span class="trust-level" :style="{ color: d.trustScore.color }">{{ d.trustScore.levelText }}</span>
+                <span class="trust-grade">{{ d.trustScore.grade }} 档 · AI 综合可信度</span>
+              </div>
+              <div class="trust-headline">{{ d.trustScore.headline }}</div>
+            </div>
+          </div>
+
+          <div class="trust-dims">
+            <div v-for="dim in d.trustScore.dimensions" :key="dim.key" class="trust-dim">
+              <div class="dim-top">
+                <span class="dim-name">{{ dim.name }}</span>
+                <span class="dim-score">{{ dim.score }} / {{ dim.max }}</span>
+              </div>
+              <div class="dim-bar">
+                <i :class="dim.status" :style="{ width: Math.round((dim.score / dim.max) * 100) + '%' }"></i>
+              </div>
+              <div class="dim-detail">{{ dim.detail }}</div>
+            </div>
+          </div>
+
+          <div v-if="d.trustScore.advice?.length" class="trust-advice">
+            💡 {{ d.trustScore.advice[0] }}
+          </div>
+          <div class="trust-foot">评分由农事记录完整度 · 检测结论 · 流转闭环 · 用药频次 四项数据聚合，红黄绿三档呈现</div>
+        </div>
+
         <!-- 批次信息 -->
         <el-card shadow="never" class="t-card">
           <template #header>📋 批次档案</template>
@@ -223,6 +255,41 @@ onMounted(load)
 .t-links a:hover { color: #2e7d32; }
 .t-body { max-width: 860px; margin: 0 auto; padding: 20px 14px 60px; }
 .t-card { margin-bottom: 16px; }
+/* AI 综合可信度评分卡 */
+.trust-card {
+  background: #fff; border-left: 6px solid #2e7d32; border-radius: 14px;
+  padding: 18px 20px; margin-bottom: 16px;
+  box-shadow: 0 4px 18px rgba(31, 66, 39, .08);
+}
+.trust-head { display: flex; align-items: center; gap: 16px; }
+.trust-ring {
+  width: 78px; height: 78px; flex: 0 0 auto; border-radius: 50%; color: #fff;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 30px; font-weight: 800; letter-spacing: -1px;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, .14);
+}
+.trust-head-info { flex: 1; min-width: 0; }
+.trust-title { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.trust-level { font-size: 21px; font-weight: 800; letter-spacing: 1px; }
+.trust-grade { font-size: 12.5px; color: #8a9a8e; }
+.trust-headline { margin-top: 4px; color: #4a674e; font-size: 13.5px; line-height: 1.6; }
+.trust-dims {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 12px 22px; margin-top: 18px;
+}
+.trust-dim { min-width: 0; }
+.dim-top { display: flex; justify-content: space-between; font-size: 13px; color: #3d5a43; }
+.dim-name { font-weight: 600; }
+.dim-score { color: #8a9a8e; font-family: monospace; }
+.dim-bar { height: 7px; background: #eef3ee; border-radius: 4px; overflow: hidden; margin: 5px 0 4px; }
+.dim-bar i { display: block; height: 100%; border-radius: 4px; background: #2e7d32; transition: width .4s; }
+.dim-bar i.warn { background: #f9a825; }
+.dim-bar i.bad { background: #d32f2f; }
+.dim-detail { font-size: 11.5px; color: #9aa89c; line-height: 1.5; }
+.trust-advice {
+  margin-top: 14px; padding: 9px 12px; border-radius: 8px;
+  background: #f4f9f4; border: 1px dashed #cfe6cf; color: #2e7d32; font-size: 13px;
+}
+.trust-foot { margin-top: 10px; color: #a5b2a7; font-size: 11.5px; }
 .hero-row { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; }
 .hero-crop { font-size: 30px; font-weight: 800; letter-spacing: 2px; }
 .hero-sub { margin-top: 10px; display: flex; align-items: center; gap: 10px; }
@@ -247,5 +314,9 @@ onMounted(load)
 @media (max-width: 768px) {
   .hero-crop { font-size: 24px; }
   .t-links { gap: 12px; }
+  .trust-card { padding: 16px; }
+  .trust-ring { width: 64px; height: 64px; font-size: 24px; }
+  .trust-level { font-size: 18px; }
+  .trust-dims { grid-template-columns: 1fr; }
 }
 </style>

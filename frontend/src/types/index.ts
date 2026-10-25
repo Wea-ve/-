@@ -227,6 +227,29 @@ export interface ScanStatsData {
   scanLogs: ScanLog[]
 }
 
+/** 可信度评分维度 */
+export interface TrustDimension {
+  key: string
+  name: string
+  score: number
+  max: number
+  detail: string
+  status: 'good' | 'warn' | 'bad'
+}
+
+/** AI 综合可信度评分（扫码页先看评分、再看明细） */
+export interface TrustScore {
+  score: number
+  level: 'GREEN' | 'YELLOW' | 'RED'
+  levelText: string
+  grade: string
+  color: string
+  headline: string
+  dimensions: TrustDimension[]
+  advice: string[]
+  computedAt?: string
+}
+
 /** 消费者溯源详情 */
 export interface TraceDetailData {
   batch: CropBatch
@@ -234,6 +257,7 @@ export interface TraceDetailData {
   records: TraceRecord[]
   reports: DetectionReport[]
   nodeCount: number
+  trustScore?: TrustScore
 }
 
 /** 经销商溯源查询 */

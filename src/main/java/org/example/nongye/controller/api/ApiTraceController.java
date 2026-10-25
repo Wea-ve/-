@@ -5,6 +5,7 @@ import org.example.nongye.common.ApiException;
 import org.example.nongye.common.ApiResult;
 import org.example.nongye.entity.*;
 import org.example.nongye.mapper.*;
+import org.example.nongye.service.TrustScoreService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -35,6 +36,8 @@ public class ApiTraceController {
     private ComplaintMapper complaintMapper;
     @Autowired
     private ScanLogMapper scanLogMapper;
+    @Autowired
+    private TrustScoreService trustScoreService;
 
     /** 扫码溯源详情（公开）：记录扫码日志，供扫码统计 */
     @GetMapping("/trace/{traceCode}")
@@ -55,13 +58,19 @@ public class ApiTraceController {
             log.warn("扫码日志记录失败", e);
         }
 
+        List<FarmingLog> logs = farmingLogMapper.selectByBatchId(batch.getId());
+        List<TraceRecord> records = traceRecordMapper.selectByBatchId(batch.getId());
+        List<DetectionReport> reports = reportMapper.selectByBatchId(batch.getId());
+
         Map<String, Object> data = new HashMap<>();
         data.put("batch", batch);
-        data.put("logs", farmingLogMapper.selectByBatchId(batch.getId()));
-        data.put("records", traceRecordMapper.selectByBatchId(batch.getId()));
-        data.put("reports", reportMapper.selectByBatchId(batch.getId()));
+        data.put("logs", logs);
+        data.put("records", records);
+        data.put("reports", reports);
         // 可信徽章：流转节点数
         data.put("nodeCount", traceRecordMapper.countByBatchId(batch.getId()));
+        // AI 综合可信度评分：扫码先看红黄绿评分卡，再看明细
+        data.put("trustScore", trustScoreService.score(batch, logs, records, reports));
         return ApiResult.ok(data);
     }
 
