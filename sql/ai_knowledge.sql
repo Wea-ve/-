@@ -542,3 +542,79 @@ INSERT INTO knowledge_doc (title, category, content)
 SELECT * FROM (SELECT '吡虫啉在番茄上的残留限量与安全间隔期', '法规标准',
 'GB 2763-2021 规定吡虫啉在番茄（西红柿）中的最大残留限量（MRL）为 0.5 mg/kg。吡虫啉常用于防治蚜虫，标签推荐安全间隔期通常为 7 天；实际采收应不早于最后一次施药后 7 天，并以产品标签标注为准。检测报告实测值低于 0.5 mg/kg 即判定该项合格。') AS t
 WHERE NOT EXISTS (SELECT 1 FROM knowledge_doc WHERE title = '吡虫啉在番茄上的残留限量与安全间隔期');
+
+-- =============================================
+-- RAG 扩增：当季农事 + 区域种植方案 + 食用建议
+-- 让 AI 不只"查标准"，还能给出可执行的种植/食用建议
+-- =============================================
+INSERT INTO knowledge_doc (title, category, content, source, doc_version)
+SELECT * FROM (SELECT '春季当季农事要点（3-5 月）', '种植标准',
+'春季气温回升但昼夜温差大，是育苗定植和病虫初发的关键期。育苗：番茄、黄瓜一般 3 月上中旬播种育苗，苗龄 30-40 天，待 5cm 地温稳定在 12℃ 以上再定植，定植前 5-7 天通风炼苗。水肥：定植水一次浇透，缓苗后控水蹲苗，第一穗果膨大前少施氮肥、避免徒长。病虫：重点预防灰霉病、猝倒病和蚜虫，优先用防虫网、黄板、通风降湿等物理措施。采收：叶菜播后 35-50 天可收，清晨采收更耐存放。', '平台整理（参考农业农村部蔬菜生产技术指导意见）', '2026-10'
+) AS t
+WHERE NOT EXISTS (SELECT 1 FROM knowledge_doc WHERE title = '春季当季农事要点（3-5 月）');
+
+INSERT INTO knowledge_doc (title, category, content, source, doc_version)
+SELECT * FROM (SELECT '夏季当季农事要点（6-8 月）', '种植标准',
+'夏季高温高湿、暴雨集中，管理重点是降温、排涝和病虫防控。降温：10:00-16:00 覆盖遮阳网，小水勤浇，避免中午高温时段浇水，防止日灼和裂果。排涝：暴雨前清理排水沟，雨后及时排除积水，防止沤根和土传病害。病虫：高温高湿易发霜霉病、白粉病、蓟马和红蜘蛛，优先物理防治（防虫网、黄板、摘除病叶），必要时按标签用药并留足安全间隔期。采收：避开正午高温采收，采后尽快预冷。', '平台整理（参考农业农村部蔬菜生产技术指导意见）', '2026-10'
+) AS t
+WHERE NOT EXISTS (SELECT 1 FROM knowledge_doc WHERE title = '夏季当季农事要点（6-8 月）');
+
+INSERT INTO knowledge_doc (title, category, content, source, doc_version)
+SELECT * FROM (SELECT '秋季当季农事要点（9-11 月）', '种植标准',
+'秋季日均温 20-25℃，是秋播和秋延后栽培的适宜期。播种：叶菜 9 月上中旬播种，萝卜、白菜适期早播以避开后期低温；大棚秋延后番茄、黄瓜 8 月定植、10-12 月上市。管理：昼夜温差大有利于糖分积累，适当控水提高品质；后期夜间温度低于 12℃ 时加盖保温被。病虫：重点防霜霉病、软腐病和菜青虫，清除田间残株减少越冬虫源。采收：关注寒潮预报，适期采收避免冻害。', '平台整理（参考农业农村部蔬菜生产技术指导意见）', '2026-10'
+) AS t
+WHERE NOT EXISTS (SELECT 1 FROM knowledge_doc WHERE title = '秋季当季农事要点（9-11 月）');
+
+INSERT INTO knowledge_doc (title, category, content, source, doc_version)
+SELECT * FROM (SELECT '冬季当季农事要点（12-2 月）', '种植标准',
+'冬季以设施栽培为主，核心是保温、控湿和补光。保温：夜间加盖保温被，棚内温度尽量不低于 8℃，寒潮前加固棚体、检查压膜线。控湿：晴天中午通风 1-2 小时排湿，减少浇水，必须浇水时选晴天上午小水勤浇，防止灰霉病和菌核病。补光：连阴天可用补光灯，及时清洁棚膜增加透光。露地：选择菠菜、乌塌菜等耐寒叶菜，寒潮前覆盖无纺布。', '平台整理（参考农业农村部蔬菜生产技术指导意见）', '2026-10'
+) AS t
+WHERE NOT EXISTS (SELECT 1 FROM knowledge_doc WHERE title = '冬季当季农事要点（12-2 月）');
+
+INSERT INTO knowledge_doc (title, category, content, source, doc_version)
+SELECT * FROM (SELECT '华南地区蔬菜种植方案', '种植标准',
+'华南地区高温高湿、台风暴雨多，秋冬春为蔬菜生产旺季，夏秋以遮阳避雨栽培为主。品种：选择耐热抗病品种，如豇豆、苦瓜、空心菜、菜心、芥蓝。田间：高畦深沟、三沟配套，确保暴雨后快速排水；坡地注意水土保持。管理：夏季覆盖遮阳网并配合避雨棚，减少病害和暴雨损伤；台风前加固棚架、抢收可上市蔬菜。病虫：重点防蓟马、豆荚螟、青枯病和疫病，优先使用防虫网、黄蓝板与生物防治。', '平台整理（参考华南地区蔬菜生产指导意见）', '2026-10'
+) AS t
+WHERE NOT EXISTS (SELECT 1 FROM knowledge_doc WHERE title = '华南地区蔬菜种植方案');
+
+INSERT INTO knowledge_doc (title, category, content, source, doc_version)
+SELECT * FROM (SELECT '长江中下游地区蔬菜种植方案', '种植标准',
+'长江中下游四季分明、梅雨明显，春多雨、夏高温、冬湿冷。茬口：番茄、黄瓜以春提早和秋延后栽培为主，叶菜可周年分批播种。梅雨：梅雨前清理沟渠、深沟高畦，雨后及时排水防渍害和病害蔓延。土壤：推行稻菜轮作、水旱轮作，减轻土传病害和连作障碍。夏季：高温期覆盖遮阳网、早晚浇水；冬季：大棚多层覆盖保温，注意控湿防灰霉病。', '平台整理（参考长江流域蔬菜生产指导意见）', '2026-10'
+) AS t
+WHERE NOT EXISTS (SELECT 1 FROM knowledge_doc WHERE title = '长江中下游地区蔬菜种植方案');
+
+INSERT INTO knowledge_doc (title, category, content, source, doc_version)
+SELECT * FROM (SELECT '华北地区蔬菜种植方案', '种植标准',
+'华北地区光照足、昼夜温差大、降水偏少，以日光温室和春秋两季露地栽培为主。节水：推广滴灌与水肥一体化，按生育期分次追肥，避免大水漫灌。春季：关注倒春寒和霜冻预警，定植后遇低温可临时搭小拱棚。夏季：高温强光易造成日灼，适当遮阳、保持土壤湿润。冬季：日光温室重点是保温与补光，连阴天减少浇水、晴天中午短时通风。土壤：增施腐熟有机肥，定期深翻改良。', '平台整理（参考华北地区蔬菜生产指导意见）', '2026-10'
+) AS t
+WHERE NOT EXISTS (SELECT 1 FROM knowledge_doc WHERE title = '华北地区蔬菜种植方案');
+
+INSERT INTO knowledge_doc (title, category, content, source, doc_version)
+SELECT * FROM (SELECT '西南地区蔬菜种植方案', '种植标准',
+'西南地区山地立体气候明显，海拔每升高 100 米气温约下降 0.6℃，适合发展错季蔬菜。布局：河谷低海拔区做早熟栽培，中高海拔区安排夏秋错季蔬菜（7-9 月上市），弥补平原高温缺菜期。田间：坡地修梯田、开横沟，防止水土流失；雨季注意排水防涝。病虫：高湿环境重点防番茄晚疫病、霜霉病和蚜虫，优先清除病残体、通风降湿和物理防控。品种：选择抗逆性强的当地主栽品种。', '平台整理（参考西南地区蔬菜生产指导意见）', '2026-10'
+) AS t
+WHERE NOT EXISTS (SELECT 1 FROM knowledge_doc WHERE title = '西南地区蔬菜种植方案');
+
+INSERT INTO knowledge_doc (title, category, content, source, doc_version)
+SELECT * FROM (SELECT '设施蔬菜轮作与茬口安排', '种植标准',
+'设施蔬菜忌同科连作：番茄、辣椒、茄子同属茄科，连续种植会加重青枯病、根结线虫等土传病害。推荐轮作：果菜类—叶菜类—豆类（或葱蒜类）三年轮换，葱蒜类还有一定抑菌作用。茬口安排：春提早（2 月定植、5-6 月上市）、秋延后（8 月定植、10-12 月上市）、越冬茬（10-11 月定植、翌年 2-5 月上市）。夏季休茬期可高温闷棚 15-20 天，配合清园、深翻和有机肥改良土壤。', '平台整理（参考设施蔬菜生产技术规程）', '2026-10'
+) AS t
+WHERE NOT EXISTS (SELECT 1 FROM knowledge_doc WHERE title = '设施蔬菜轮作与茬口安排');
+
+INSERT INTO knowledge_doc (title, category, content, source, doc_version)
+SELECT * FROM (SELECT '番茄食用与营养搭配建议', '消费科普',
+'番茄富含番茄红素、维生素C和钾。番茄红素是脂溶性物质，与少量油脂同烹（如番茄炒蛋）更利于吸收；生食则能保留更多维生素C。每天蔬菜建议摄入 300-500 克，番茄可作为其中一份（约 200-300 克）。搭配鸡蛋、瘦肉或豆制品可补充优质蛋白；不建议空腹大量生食，胃酸过多者适量。未成熟的青番茄含龙葵碱，不宜生食；成熟番茄冷藏后风味会下降，常温存放更佳。', '平台整理（参考中国居民膳食指南）', '2026-10'
+) AS t
+WHERE NOT EXISTS (SELECT 1 FROM knowledge_doc WHERE title = '番茄食用与营养搭配建议');
+
+INSERT INTO knowledge_doc (title, category, content, source, doc_version)
+SELECT * FROM (SELECT '叶菜类食用与营养建议', '消费科普',
+'叶菜富含叶酸、钾、膳食纤维和维生素K。急火快炒或焯水后凉拌能减少维生素C损失；焯水 30-60 秒还可去除部分表面农残、草酸和钾，肾病患者尤其建议焯水后食用。选购后现买现吃，冷藏保存不超过 3 天，发黄腐烂的叶片及时摘除。搭配豆制品、菌菇或瘦肉，可提高一餐的蛋白质与膳食纤维摄入。每日蔬菜 300-500 克、深色蔬菜占一半，是均衡饮食的基本建议。', '平台整理（参考中国居民膳食指南）', '2026-10'
+) AS t
+WHERE NOT EXISTS (SELECT 1 FROM knowledge_doc WHERE title = '叶菜类食用与营养建议');
+
+INSERT INTO knowledge_doc (title, category, content, source, doc_version)
+SELECT * FROM (SELECT '黄瓜食用与营养建议', '消费科普',
+'黄瓜含水量约 95%，热量低，含钾和少量膳食纤维，适合作为加餐或凉拌菜。表皮膳食纤维较多，用流动水搓洗 30 秒后可带皮食用；凉拌前可先用清水或小苏打水浸泡 5-10 分钟再冲洗。脾胃虚寒者不宜大量生食，可快炒或做汤。黄瓜与番茄同食没有禁忌，"同食破坏维生素C"的说法缺乏依据。切开后易失水变软，建议当天吃完，冷藏时用保鲜膜包裹。', '平台整理（参考中国居民膳食指南）', '2026-10'
+) AS t
+WHERE NOT EXISTS (SELECT 1 FROM knowledge_doc WHERE title = '黄瓜食用与营养建议');

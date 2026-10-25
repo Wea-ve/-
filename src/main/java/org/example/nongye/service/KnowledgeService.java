@@ -18,6 +18,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * 农事知识库 RAG 检索服务
@@ -85,14 +86,15 @@ public class KnowledgeService {
         return keywordSearch(docs, query, topK);
     }
 
-    /** 关键词降级检索：按字面包含打分 */
+    /** 关键词降级检索：标题命中权重更高，避免长问句被正文淹没 */
     private List<Map<String, Object>> keywordSearch(List<KnowledgeDoc> docs, String query, int topK) {
         List<Map<String, Object>> scored = new ArrayList<>();
         for (KnowledgeDoc doc : docs) {
             int score = 0;
             for (String key : splitKeywords(query)) {
-                if (doc.getTitle().contains(key) || doc.getContent().contains(key)) score += 2;
-                if (doc.getCategory() != null && doc.getCategory().contains(key)) score += 1;
+                if (doc.getTitle().contains(key)) score += 3;
+                if (doc.getContent() != null && doc.getContent().contains(key)) score += 1;
+                if (doc.getCategory() != null && doc.getCategory().contains(key)) score += 2;
             }
             if (score > 0) {
                 Map<String, Object> item = toItem(doc);
@@ -104,11 +106,23 @@ public class KnowledgeService {
         return scored.subList(0, Math.min(topK, scored.size()));
     }
 
-    /** 极简分词：按常见标点/空白切分并过滤短词 */
+    /** 常见虚词两字组合，降级检索时不计分，避免召回无关知识 */
+    private static final Set<String> STOP_GRAMS = Set.of(
+            "什么", "怎么", "如何", "适合", "可以", "哪些", "是否", "多少", "这个", "那个",
+            "我们", "现在", "今天", "请问", "一下", "有没", "没有", "能不", "不能", "时候",
+            "一个", "需要", "应该");
+
+    /** 极简分词：按常见标点/空白切分，并为中文长句补充 2 字词窗（关键词降级检索用） */
     private List<String> splitKeywords(String query) {
         List<String> keys = new ArrayList<>();
         for (String w : query.split("[，。？！、,.?\\s]+")) {
-            if (w.length() >= 2) keys.add(w);
+            if (w.length() < 2) continue;
+            if (w.length() <= 8) keys.add(w);
+            // 中文问句通常没有空格，补充 2 字词窗，保证"华南地区夏天适合种什么菜"能命中区域/季节知识
+            for (int i = 0; i + 2 <= w.length(); i++) {
+                String gram = w.substring(i, i + 2);
+                if (!STOP_GRAMS.contains(gram)) keys.add(gram);
+            }
         }
         if (keys.isEmpty() && !query.isEmpty()) keys.add(query);
         return keys;
