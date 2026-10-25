@@ -24,7 +24,7 @@ import java.util.Map;
 
 /**
  * AI 问答：消费者扫码后基于批次数据回答问题
- * - 带图片 → 多模态：调通义千问 VL 模型识别照片（如农药包装、蔬菜状态）作答
+ * - 带图片 → 多模态：调通义千问 VL 模型识别照片（农药包装 / 作物病虫害 / 果蔬新鲜度）作答
  * - 纯文本 + 配置了 ai.api-key → Agent 模式：工具调用 + RAG 知识库 + 多轮会话
  * - 未配置 Key → 根据批次数据生成模拟回复（兜底，答辩演示够用）
  */
@@ -250,7 +250,7 @@ public class AiController {
         }
     }
 
-    /** 多模态：调通义千问 VL（图片以 data URL 传入，OpenAI 兼容格式） */
+    /** 多模态：调通义千问 VL（覆盖农药包装、作物病虫害、采后新鲜度三类高频场景） */
     private String callVlApi(CropBatch batch, String question, String imageDataUrl) {
         // 图片转文字说明 + 批次上下文一起喂给模型
         String context = buildBriefContext(batch);
@@ -259,8 +259,15 @@ public class AiController {
         userContent.add(new JSONObject().set("type", "text")
                 .set("text", "消费者在溯源页上传了一张照片并提问：\n" + question
                         + "\n\n" + context
-                        + "\n请先客观描述图片中可见的内容（作物/包装/标签文字），再针对问题给出判断或建议。"
-                        + "看不清或无法确认的地方必须明说，不要猜测。用中文分点回答，控制在 200 字以内。"));
+                        + "\n请按以下要求识别并用中文分点回答（控制在 220 字以内）：\n"
+                        + "1. 先判断照片属于哪类场景，并如实描述可见特征：农药/肥料包装、作物叶片或果实、采后蔬菜状态；\n"
+                        + "2. 若是包装：读出可见的登记证号、有效成分、毒性标识与安全间隔期，并解释其对食用的含义；\n"
+                        + "3. 若是叶片或果实：识别可能的病害/虫害（如霜霉病、白粉病、晚疫病、蚜虫、白粉虱等），"
+                        + "说明判断依据（病斑形状、颜色、位置、虫体特征），并给出防治建议——优先物理与生物防治，"
+                        + "必要时提示安全间隔期，不得编造具体农药用量；\n"
+                        + "4. 若是采后蔬菜：判断新鲜度，并给出清洗、储存与食用建议；\n"
+                        + "5. 看不清或无法确认的地方必须明说，不要猜测。"
+                        + "（图片识别结果只作参考，批次登记事实以平台数据为准。）"));
         userContent.add(new JSONObject().set("type", "image_url")
                 .set("image_url", new JSONObject().set("url", imageDataUrl)));
 

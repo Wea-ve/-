@@ -606,12 +606,13 @@ public class AgentService {
         return false;
     }
 
-    /** 判断问题是否涉及通用知识（标准/清洗/储存等），用于预取知识库 */
+    /** 判断问题是否涉及通用知识（标准/清洗/储存/病虫害防治等），用于预取知识库 */
     private boolean needsKnowledge(String question) {
         if (question == null || question.isEmpty()) return false;
         String[] keywords = {"限量", "标准", "安全间隔期", "清洗", "储存", "保鲜", "营养", "挑选",
                 "农残", "怎么洗", "保存", "存放", "打药", "农药", "安全",
-                "防治", "病害", "虫害", "种植", "施肥"};
+                "防治", "病害", "虫害", "种植", "施肥",
+                "叶片", "叶子", "病斑", "虫子", "害虫", "发黄", "萎蔫", "腐烂", "烂叶", "识别"};
         for (String k : keywords) {
             if (question.contains(k)) return true;
         }

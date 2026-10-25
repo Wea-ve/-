@@ -17,7 +17,7 @@
           </div>
         </div>
         <div class="ai-body" ref="bodyEl">
-          <div class="ai-msg bot">您好！我是本批次的 AI 溯源助手，可以问我：农残合格吗？打过几次农药？怎么保存？也可以拍照上传（农药包装、蔬菜状态）让我识别解答～</div>
+          <div class="ai-msg bot">您好！我是本批次的 AI 信任助手，可以问我：农残合格吗？打过几次农药？怎么保存？也可以拍张照片——农药包装、叶片病斑、果实状态，我能识别病虫害并给防治建议～</div>
           <div v-for="(m, i) in messages" :key="i" class="ai-msg" :class="m.role === 'user' ? 'user' : 'bot'">
             <div class="ai-bubble">
               <img v-if="m.image" :src="m.image" class="ai-msg-img" @click="preview(m.image)" />
@@ -55,8 +55,8 @@
         </div>
         <div class="ai-input">
           <input ref="fileEl" type="file" accept="image/*" class="ai-file" @change="onPickImage" />
-          <button class="ai-cam" title="上传照片提问" @click="fileEl && fileEl.click()" :disabled="loading">📷</button>
-          <el-input v-model="input" placeholder="输入问题，回车发送" :disabled="loading"
+          <button class="ai-cam" title="拍照识别：农药包装 / 叶片病虫害 / 果蔬新鲜度" @click="fileEl && fileEl.click()" :disabled="loading">📷</button>
+          <el-input v-model="input" placeholder="输入问题，或点 📷 拍照识病虫害" :disabled="loading"
                     @keyup.enter="send" clearable />
           <el-button type="primary" :loading="loading" @click="send">发送</el-button>
         </div>
