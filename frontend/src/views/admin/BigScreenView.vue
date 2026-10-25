@@ -3,11 +3,11 @@
     <!-- 顶部标题栏 -->
     <header class="bs-header">
       <div class="hd-side left">
-        <span class="hd-chip">AI WEB 赛道 · 农产品全链路溯源平台</span>
+        <span class="hd-chip">AI WEB 赛道 · 农产品消费信任引擎</span>
       </div>
       <div class="hd-title">
         <i class="hd-line"></i>
-        <h1>🌾 农芯溯源 · 全链路数据大屏</h1>
+        <h1>🌾 安溯·知源 · 全链路数据大屏</h1>
         <i class="hd-line"></i>
       </div>
       <div class="hd-side right">

@@ -2,7 +2,7 @@
   <div class="trace-page">
     <!-- 顶部导航条 -->
     <header class="t-nav">
-      <div class="t-brand">🌾 农芯溯源</div>
+      <div class="t-brand">🌾 安溯·知源</div>
       <div class="t-links">
         <router-link to="/complaint/new">我要投诉</router-link>
         <router-link to="/complaint/query">投诉查询</router-link>
@@ -123,7 +123,7 @@
           </el-button>
         </el-card>
 
-        <div class="t-foot">从田间到餐桌 · 每一步都可信 —— 农芯溯源平台提供</div>
+        <div class="t-foot">从田间到餐桌 · 每一步都可判断 —— 安溯·知源 VeriTrace</div>
       </template>
     </div>
 

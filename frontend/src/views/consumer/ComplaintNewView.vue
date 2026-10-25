@@ -1,7 +1,7 @@
 <template>
   <div class="trace-page">
     <header class="t-nav">
-      <div class="t-brand">🌾 农芯溯源</div>
+      <div class="t-brand">🌾 安溯·知源</div>
       <div class="t-links">
         <router-link to="/complaint/query">投诉查询</router-link>
         <router-link to="/login">管理入口</router-link>

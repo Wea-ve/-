@@ -6,7 +6,7 @@
         <el-button text class="burger" @click="drawer = true">
           <el-icon :size="22"><Fold /></el-icon>
         </el-button>
-        <div class="brand">🌾 农芯溯源</div>
+        <div class="brand">🌾 安溯·知源</div>
         <el-tag size="small" effect="dark" round class="role-tag">{{ roleInfo.name }}端</el-tag>
       </div>
       <div class="topbar-right">
@@ -41,7 +41,7 @@
       <div v-if="drawer" class="drawer-mask" @click.self="drawer = false">
         <aside class="drawer-panel">
           <div class="drawer-head">
-            <div class="drawer-brand">🌾 农芯溯源</div>
+            <div class="drawer-brand">🌾 安溯·知源</div>
             <el-button text circle class="drawer-close" @click="drawer = false">
               <el-icon :size="20"><Close /></el-icon>
             </el-button>

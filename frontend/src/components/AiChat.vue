@@ -10,7 +10,7 @@
     <transition name="ai-pop">
       <div v-if="open" class="ai-panel">
         <div class="ai-head">
-          <span>🌾 溯源智能问答</span>
+          <span>🌾 安溯 AI 信任助手</span>
           <div class="ai-head-btns">
             <button class="ai-head-btn" title="清空对话" @click="clearChat" v-if="messages.length">🗑️</button>
             <button class="ai-head-btn" title="关闭" @click="open = false">✕</button>

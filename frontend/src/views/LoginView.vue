@@ -3,8 +3,8 @@
     <div class="login-wrap">
       <div class="brand-head">
         <div class="brand-logo">🌾</div>
-        <div class="brand-title">农芯溯源</div>
-        <div class="brand-sub">农产品全链路溯源管理平台 · Vue3 SPA</div>
+        <div class="brand-title">安溯·知源</div>
+        <div class="brand-sub">AI 可信判断 · 农产品消费信任引擎</div>
       </div>
 
       <div class="login-card">
